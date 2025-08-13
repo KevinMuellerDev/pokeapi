@@ -12,6 +12,7 @@ export function startREPL(state: State) {
   state.rl.on("line", async (input) => {
     const getInput = cleanInput(input);
     const commandName = getInput[0];
+    const args = getInput.slice(1);
     const cmd = state.commands[commandName];
 
     if (!cmd) {
@@ -23,7 +24,7 @@ export function startREPL(state: State) {
     }
 
     try {
-      await cmd.callback(state);
+      await cmd.callback(state, ...args);
     } catch (e) {
       console.log(e);
     }

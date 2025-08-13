@@ -1,6 +1,7 @@
 import type { State } from "./state.js";
+
 export async function commandMapb(state: State) {
-  const pageURL = state.pokeapi.prevLocationsURL;
+  const pageURL = state.prevLocationsURL;
   if (!pageURL) {
     console.log("you're on the first page");
     return;
@@ -10,4 +11,7 @@ export async function commandMapb(state: State) {
   for (const location of locations.results) {
     console.log(location.name);
   }
+
+  state.nextLocationsURL = locations.next;
+  state.prevLocationsURL = locations.previous;
 }

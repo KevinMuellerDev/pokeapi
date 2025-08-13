@@ -1,13 +1,22 @@
-export class PokeAPI {
-  private static readonly baseURL = "https://pokeapi.co/api/v2/location-area/";
-  nextLocationsURL: string = "";
-  prevLocationsURL: string = "";
+import { Cache } from "./pokecache.js";
 
-  constructor() {}
+export class PokeAPI {
+  private static readonly baseURL = "https://pokeapi.co/api/v2";
+  private cache: Cache;
+
+  constructor(cacheInterval: number) {
+    this.cache = new Cache(cacheInterval);
+  }
 
   async fetchLocations(pageURL?: string): Promise<ShallowLocations> {
+    const path = "/location-area";
+    const URL = pageURL ? pageURL : PokeAPI.baseURL + path;
+    const cached = this.cache.get<ShallowLocations>(URL);
+
+    if (cached) return cached;
+
     try {
-      const response = await fetch(!pageURL ? PokeAPI.baseURL : pageURL);
+      const response = await fetch(URL);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -15,8 +24,7 @@ export class PokeAPI {
 
       const data = await response.json();
 
-      this.nextLocationsURL = data.next;
-      this.prevLocationsURL = data.previous;
+      this.cache.add(URL, data);
 
       return data;
     } catch (e) {
@@ -25,8 +33,14 @@ export class PokeAPI {
   }
 
   async fetchLocation(locationName: string): Promise<Location> {
+    const path = "/location-area/";
+    const URL = PokeAPI.baseURL + path + locationName;
+    const cached = this.cache.get<Location>(URL);
+
+    if (cached) return cached;
+
     try {
-      const response = await fetch(PokeAPI.baseURL + locationName);
+      const response = await fetch(URL);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -54,13 +68,19 @@ export type Location = {
   encounter_method_rates: any[];
   location: Location;
   names: any[];
-  pokemon_encounters: any[];
+  pokemon_encounters: PokemonList[];
+};
+
+export type PokemonList = {
+  pokemon: Pokemon;
+};
+
+export type Pokemon = {
+  name: string;
+  url: string;
 };
 
 export type PokeAPIInstance = {
-  nextLocationsURL: string;
-  prevLocationsURL: string;
-
   fetchLocations(pageURL?: string): Promise<ShallowLocations>;
   fetchLocation(locationName: string): Promise<Location>;
 };
