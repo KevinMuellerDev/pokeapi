@@ -1,51 +1,33 @@
-import { createInterface } from "node:readline";
-import { commandExit } from "./command_exit.js";
-import { commandHelp } from "./command_help.js";
-import type { CLICommand } from "./command.js";
+import type { State } from "./state.js";
 
 export function cleanInput(input: string): string[] {
   return input.trim().toLowerCase().split(/\s+/);
 }
 
-export function getCommands(): Record<string, CLICommand> {
-  return {
-    exit: {
-      name: "exit",
-      description: "Exits the pokedex",
-      callback: commandExit,
-    },
-    help: {
-      name: "help",
-      description: "Displays a help message",
-      callback: commandHelp,
-    },
-    // can add more commands here
-  };
-}
-
-export function startREPL() {
-  //readline interface created
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: "Pokedex > ",
-  });
-
+export function startREPL(state: State) {
   //activate prompt
-  rl.prompt();
+  state.rl.prompt();
 
   //on input clean the input and do:
-  rl.on("line", (input) => {
+  state.rl.on("line", async (input) => {
     const getInput = cleanInput(input);
-    const command = getInput[0];
-    const commands = getCommands();
-    const cmd = commands[command];
+    const commandName = getInput[0];
+    const cmd = state.commands[commandName];
 
-    if (cmd) {
-      cmd.callback(commands);
-      rl.prompt();
-    } else {
-      rl.prompt();
+    if (!cmd) {
+      console.log(
+        `Unknown command: "${commandName}". Type "help" for a list of commands.`
+      );
+      state.rl.prompt();
+      return;
     }
+
+    try {
+      await cmd.callback(state);
+    } catch (e) {
+      console.log(e);
+    }
+
+    state.rl.prompt();
   });
 }
