@@ -1,4 +1,5 @@
 import { Cache } from "./pokecache.js";
+import type { Pokemon } from "./state.js";
 
 export class PokeAPI {
   private static readonly baseURL = "https://pokeapi.co/api/v2";
@@ -6,6 +7,10 @@ export class PokeAPI {
 
   constructor(cacheInterval: number) {
     this.cache = new Cache(cacheInterval);
+  }
+
+  closeCache() {
+    this.cache.stopReapLoop();
   }
 
   async fetchLocations(pageURL?: string): Promise<ShallowLocations> {
@@ -52,6 +57,24 @@ export class PokeAPI {
       throw new Error(`${(e as Error).message}`);
     }
   }
+
+  async fetchPokemon(name: string): Promise<Pokemon> {
+    const path = "/pokemon/";
+    const URL = PokeAPI.baseURL + path + name;
+
+    try {
+      const response = await fetch(URL);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (e) {
+      throw new Error(`${(e as Error).message}`);
+    }
+  }
 }
 
 export type ShallowLocations = {
@@ -72,10 +95,10 @@ export type Location = {
 };
 
 export type PokemonList = {
-  pokemon: Pokemon;
+  pokemon: PokemonData;
 };
 
-export type Pokemon = {
+export type PokemonData = {
   name: string;
   url: string;
 };
@@ -83,4 +106,6 @@ export type Pokemon = {
 export type PokeAPIInstance = {
   fetchLocations(pageURL?: string): Promise<ShallowLocations>;
   fetchLocation(locationName: string): Promise<Location>;
+  fetchPokemon(name: string): Promise<Pokemon>;
+  closeCache(): void;
 };
